@@ -97,6 +97,8 @@ kubectl logs -f deploy/iceberg-load-generator
 The first lines name the topics it skips because they do not exist on stage. Stage has automatic
 topic creation switched off. To create them instead, set `CREATE_MISSING_TOPICS` to `"true"`: they
 get 3 partitions and 3 replicas, like the other stage topics.
+For the first few seconds after creating topics, Kafka's producer logs `NOT_LEADER_OR_FOLLOWER`
+warnings, because the new partitions are still starting. It retries them and the records arrive.
 
 Every 30 seconds it logs how many records it sent, how many failed, and how many topics it
 disabled. A topic is disabled when the schema registry refuses its schema (for example if stage
