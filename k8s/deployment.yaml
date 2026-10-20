@@ -1,0 +1,52 @@
+# Fake RADAR data for every topic on RADAR-Schemas master, sent straight to Kafka.
+# With these values one replica sends about 1,200 records/s over all topics together.
+# More load: raise `replicas`. Every replica simulates its own USERS_PER_REPLICA users,
+# so replicas: 4 gives about 4,800 records/s.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iceberg-load-generator
+  namespace: default
+  labels:
+    app.kubernetes.io/name: iceberg-load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: iceberg-load-generator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: iceberg-load-generator
+    spec:
+      containers:
+        - name: generator
+          image: docker.io/thisaditya7/iceberg-load-generator:0.1.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: cp-kafka-headless:9092
+            - name: SCHEMA_REGISTRY_URL
+              value: http://cp-schema-registry:8081
+            # Project ids as RADAR would send them. The Iceberg sink turns them into namespaces
+            # loadtest_a and loadtest_b.
+            - name: PROJECTS
+              value: LoadTest-A,LoadTest-B
+            - name: USERS_PER_REPLICA
+              value: "50"
+            # One user sends at most this many records per second on any one topic.
+            - name: MAX_RATE_HZ
+              value: "1.0"
+            # How often a user sends on topics whose spec gives no fixed rate.
+            - name: DEFAULT_INTERVAL_SECONDS
+              value: "300"
+            - name: CREATE_MISSING_TOPICS
+              value: "false"
+            - name: JAVA_OPTS
+              value: "-Xmx512m"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 768Mi
+            limits:
+              memory: 768Mi
