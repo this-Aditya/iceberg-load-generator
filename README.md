@@ -67,25 +67,32 @@ these topics get the fake data too. If RADAR's S3 sink and radar-output-restruct
 (not checked), they copy it into their bucket and write CSV files under the projects `LoadTest-A`
 and `LoadTest-B`.
 
-## Build and push
+## The image
 
-The image is built for `linux/amd64` (the stage nodes). The Gradle step runs natively, so this is
-quick on an Apple Silicon Mac too.
+Every push to `main` builds the image for `linux/amd64` and `linux/arm64` and publishes it to
+GitHub's container registry (`.github/workflows/image.yml`):
+
+| Event | Image tags |
+|---|---|
+| push to `main` | `ghcr.io/this-aditya/iceberg-load-generator:main` and `:sha-<commit>` |
+| tag `v0.2.0` | `:0.2.0` and `:latest` |
+| pull request | built only, nothing published |
+
+`k8s/deployment.yaml` uses `:main` with `imagePullPolicy: Always`, so a restarted pod runs the
+newest `main`.
+
+Another RADAR-Schemas release: change `RADAR_SCHEMAS_VERSION` in the `Dockerfile`, or pass
+`--build-arg RADAR_SCHEMAS_VERSION=0.9.4` when building by hand. The schema jar and the spec files
+then both come from that release.
+
+To build by hand, or to compile without Docker:
 
 ```bash
-cd ~/Partition/Projects/iceberg-load-generator
-docker buildx build --platform linux/amd64 \
-  -t docker.io/thisaditya7/iceberg-load-generator:0.1.0 --push .
-```
-
-Another RADAR-Schemas release: add `--build-arg RADAR_SCHEMAS_VERSION=0.9.4`. The schema jar and the
-spec files then both come from that release.
-
-To compile without Docker:
-
-```bash
+docker buildx build --platform linux/amd64 -t iceberg-load-generator:dev --load .
 ./gradlew installDist
 ```
+
+To try it on a laptop with a local Kafka and schema registry, see `docker-compose.yml`.
 
 ## Run on stage
 

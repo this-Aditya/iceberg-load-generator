@@ -21,8 +21,10 @@ spec:
     spec:
       containers:
         - name: generator
-          image: docker.io/thisaditya7/iceberg-load-generator:0.1.0
-          imagePullPolicy: IfNotPresent
+          # Built by the GitHub workflow on every push to main. Always: a restarted pod gets the
+          # newest main.
+          image: ghcr.io/this-aditya/iceberg-load-generator:main
+          imagePullPolicy: Always
           env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: cp-kafka-headless:9092
